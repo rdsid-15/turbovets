@@ -1,0 +1,35 @@
+<div class="min-h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100">
+  <header class="border-b border-slate-200 dark:border-slate-900 bg-white/80 dark:bg-slate-950/80 backdrop-blur">
+    <div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+      <div>
+        <p class="brand-text tracking-[0.5em]">TurboVets</p>
+        <h1 class="heading-xl">Secure Task Management</h1>
+      </div>
+      <div *ngIf="user$ | async as user" class="flex items-center gap-4 text-sm">
+        <button
+          class="btn-secondary"
+          (click)="toggleTheme()"
+          [attr.aria-label]="currentTheme$() === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'"
+          title="Toggle theme (T)"
+        >
+          <span *ngIf="currentTheme$() === 'dark'">☀️</span>
+          <span *ngIf="currentTheme$() === 'light'">🌙</span>
+        </button>
+        <div class="text-right">
+          <p class="font-semibold text-primary">{{ user.displayName }}</p>
+          <p class="text-secondary">{{ user.role | titlecase }} • {{ user.organization.name }}</p>
+        </div>
+        <button
+          class="btn-secondary px-3 py-1"
+          (click)="logout()"
+        >
+          Logout
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="mx-auto max-w-6xl px-6 py-8">
+    <router-outlet></router-outlet>
+  </main>
+</div>

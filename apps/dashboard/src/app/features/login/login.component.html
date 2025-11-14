@@ -1,0 +1,59 @@
+<div class="min-h-[70vh] flex items-center justify-center">
+  <div
+    class="w-full max-w-md rounded-2xl bg-white dark:bg-slate-900/60 p-8 shadow-2xl ring-1 ring-slate-200 dark:ring-slate-800"
+  >
+    <div class="mb-6">
+      <p class="brand-text">Secure Task</p>
+      <h1 class="mt-1 heading-3xl">
+        Sign in to continue
+      </h1>
+      <p class="text-sm-secondary text-sm">
+        Use the seeded credentials owner@securetask.dev / ChangeMe123!
+      </p>
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="submit()" class="space-y-5">
+      <label class="flex flex-col gap-2 form-label">
+        Email
+        <input
+          formControlName="email"
+          class="form-input text-base"
+          placeholder="you@company.com"
+          type="email"
+        />
+        <span class="text-error" *ngIf="form.controls.email.invalid && form.controls.email.touched">
+          Enter a valid email
+        </span>
+      </label>
+
+      <label class="flex flex-col gap-2 form-label">
+        Password
+        <input
+          formControlName="password"
+          class="form-input text-base"
+          placeholder="••••••••"
+          type="password"
+        />
+        <span class="text-error" *ngIf="form.controls.password.invalid && form.controls.password.touched">
+          Password must be at least 8 characters
+        </span>
+      </label>
+
+      <button
+        type="submit"
+        [disabled]="loading"
+        class="w-full btn-primary text-lg"
+      >
+        {{ loading ? 'Signing In…' : 'Sign In' }}
+      </button>
+    </form>
+
+    <p
+      *ngIf="error"
+      class="mt-4 rounded-md bg-rose-500/20 px-3 py-2 text-sm text-rose-200"
+    >
+      {{ error }}
+    </p>
+  </div>
+</div>
+

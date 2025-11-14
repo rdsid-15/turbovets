@@ -1,0 +1,397 @@
+<div class="space-y-8" *ngIf="(tasks$ | async) as tasks; else loadingBlock">
+  <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+    <div>
+      <p class="brand-text">Secure Task</p>
+      <h1 class="heading-3xl">Organization board</h1>
+      <p class="text-sm-secondary text-sm">
+        Track work, enforce RBAC, and review security events.
+      </p>
+    </div>
+    <button
+      class="btn-secondary text-sm"
+      (click)="refreshData()"
+    >
+      Refresh data
+    </button>
+  </div>
+
+  <!-- Task Completion Visualization -->
+  <section class="card-container">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <h2 class="heading-xl">Task Completion</h2>
+        <p class="text-sm-secondary">
+          Visual overview of task distribution and completion
+        </p>
+      </div>
+      <button
+        class="text-xs-secondary hover:text-slate-800 dark:hover:text-slate-300"
+        (click)="showShortcuts.set(!showShortcuts())"
+        title="Show keyboard shortcuts (?)"
+      >
+        Press ? for shortcuts
+      </button>
+    </div>
+    <div *ngIf="getTaskStats(tasks) as stats" class="space-y-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-2xl font-bold text-primary">{{ stats.completionPercentage }}%</p>
+          <p class="text-sm-secondary">Completion Rate</p>
+        </div>
+        <div class="text-right">
+          <p class="text-lg font-semibold text-primary">{{ stats.done }} / {{ stats.total }}</p>
+          <p class="text-sm-secondary">Tasks Completed</p>
+        </div>
+      </div>
+      
+      <!-- Bar Chart -->
+      <div class="space-y-3">
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-medium text-tertiary w-24">Done</span>
+          <div class="bar-chart-container">
+            <div
+              class="bar-chart-fill bg-emerald-500 dark:bg-emerald-500"
+              [style.width.%]="getStatusPercentage(tasks, TaskStatus.Done)"
+            >
+              <span class="text-xs font-semibold text-white" *ngIf="getStatusPercentage(tasks, TaskStatus.Done) > 10">
+                {{ getStatusCount(tasks, TaskStatus.Done) }}
+              </span>
+            </div>
+          </div>
+          <span class="text-xs-secondary w-12 text-right">{{ getStatusPercentage(tasks, TaskStatus.Done) }}%</span>
+        </div>
+        
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-medium text-tertiary w-24">Review</span>
+          <div class="bar-chart-container">
+            <div
+              class="bar-chart-fill bg-yellow-500 dark:bg-yellow-500"
+              [style.width.%]="getStatusPercentage(tasks, TaskStatus.Review)"
+            >
+              <span class="text-xs font-semibold text-white" *ngIf="getStatusPercentage(tasks, TaskStatus.Review) > 10">
+                {{ getStatusCount(tasks, TaskStatus.Review) }}
+              </span>
+            </div>
+          </div>
+          <span class="text-xs-secondary w-12 text-right">{{ getStatusPercentage(tasks, TaskStatus.Review) }}%</span>
+        </div>
+        
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-medium text-tertiary w-24">In Progress</span>
+          <div class="bar-chart-container">
+            <div
+              class="bar-chart-fill bg-blue-500 dark:bg-blue-500"
+              [style.width.%]="getStatusPercentage(tasks, TaskStatus.InProgress)"
+            >
+              <span class="text-xs font-semibold text-white" *ngIf="getStatusPercentage(tasks, TaskStatus.InProgress) > 10">
+                {{ getStatusCount(tasks, TaskStatus.InProgress) }}
+              </span>
+            </div>
+          </div>
+          <span class="text-xs-secondary w-12 text-right">{{ getStatusPercentage(tasks, TaskStatus.InProgress) }}%</span>
+        </div>
+        
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-medium text-tertiary w-24">Backlog</span>
+          <div class="bar-chart-container">
+            <div
+              class="bar-chart-fill bg-slate-500 dark:bg-slate-500"
+              [style.width.%]="getStatusPercentage(tasks, TaskStatus.Backlog)"
+            >
+              <span class="text-xs font-semibold text-white" *ngIf="getStatusPercentage(tasks, TaskStatus.Backlog) > 10">
+                {{ getStatusCount(tasks, TaskStatus.Backlog) }}
+              </span>
+            </div>
+          </div>
+          <span class="text-xs-secondary w-12 text-right">{{ getStatusPercentage(tasks, TaskStatus.Backlog) }}%</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="grid gap-6 md:grid-cols-2">
+    <section class="card-container">
+      <div class="flex items-center justify-between">
+        <h2 class="heading-xl">Create Task</h2>
+        <span class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-500 text-slate-600"
+          >RBAC enforced</span
+        >
+      </div>
+
+      <form class="mt-4 grid gap-4" [formGroup]="taskForm" (ngSubmit)="createTask()">
+        <label class="form-label">
+          Title
+          <input
+            class="form-input"
+            formControlName="title"
+            placeholder="Ship multi-factor auth"
+          />
+        </label>
+
+        <label class="form-label">
+          Description
+          <textarea
+            rows="3"
+            class="form-input"
+            formControlName="description"
+            placeholder="Add the missing MFA enforcement for admins"
+          ></textarea>
+        </label>
+
+        <div class="grid gap-4 md:grid-cols-2">
+          <label class="form-label">
+            Category
+            <select
+              class="form-input"
+              formControlName="category"
+            >
+              <option [ngValue]="TaskCategory.Work">Work</option>
+              <option [ngValue]="TaskCategory.Security">Security</option>
+              <option [ngValue]="TaskCategory.Personal">Personal</option>
+              <option [ngValue]="TaskCategory.Other">Other</option>
+            </select>
+          </label>
+
+          <label class="form-label">
+            Due Date
+            <input
+              type="date"
+              class="form-input"
+              formControlName="dueDate"
+            />
+          </label>
+        </div>
+
+        <label class="form-label" *ngIf="(users$ | async) as users">
+          Assign To
+          <select
+            class="form-input"
+            formControlName="assigneeId"
+          >
+            <option value="">Unassigned</option>
+            <option *ngFor="let user of users" [value]="user.id">
+              {{ user.displayName }} ({{ user.role }})
+            </option>
+          </select>
+        </label>
+
+        <button
+          type="submit"
+          class="btn-primary"
+          [disabled]="!hasManageRights()"
+        >
+          Create task
+        </button>
+        <p class="text-xs-secondary" *ngIf="!hasManageRights()">
+          You have viewer access. Elevate your role to create tasks.
+        </p>
+      </form>
+    </section>
+
+    <section class="card-container">
+      <div class="flex items-center justify-between">
+        <h2 class="heading-xl">Invite User</h2>
+        <span class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-500 text-slate-600"
+          >Owners/Admins</span
+        >
+      </div>
+
+      <form
+        class="mt-4 grid gap-4"
+        [formGroup]="userForm"
+        (ngSubmit)="createUser()"
+      >
+        <label class="form-label">
+          Email
+          <input
+            class="form-input"
+            formControlName="email"
+          />
+        </label>
+
+        <label class="form-label">
+          Name
+          <input
+            class="form-input"
+            formControlName="displayName"
+          />
+        </label>
+
+        <div class="grid gap-4 md:grid-cols-2">
+          <label class="form-label">
+            Temporary Password
+            <input
+              class="form-input"
+              formControlName="password"
+              placeholder="Minimum 10 characters"
+            />
+          </label>
+
+          <label class="form-label">
+            Role
+            <select
+              class="form-input"
+              formControlName="role"
+            >
+              <option [ngValue]="UserRole.Viewer">Viewer</option>
+              <option [ngValue]="UserRole.Admin">Admin</option>
+              <option [ngValue]="UserRole.Owner">Owner</option>
+            </select>
+          </label>
+        </div>
+
+        <button
+          type="submit"
+          class="btn-primary"
+          [disabled]="!hasManageRights()"
+        >
+          Invite user
+        </button>
+        <p class="text-xs-secondary" *ngIf="!hasManageRights()">
+          Only admins or owners can invite teammates.
+        </p>
+      </form>
+    </section>
+  </div>
+
+  <div class="grid gap-4 lg:grid-cols-4 md:grid-cols-2" cdkDropListGroup>
+    <div
+      *ngFor="let column of statusColumns"
+      class="card-container-sm"
+    >
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 class="heading-lg">{{ column.label }}</h3>
+          <p class="text-xs uppercase tracking-wide text-muted">
+            {{ column.hint }}
+          </p>
+        </div>
+        <span class="text-sm-secondary">
+          {{ tasksForStatus(column.key, tasks).length }}
+        </span>
+      </div>
+
+      <div
+        cdkDropList
+        [cdkDropListData]="tasksForStatus(column.key, tasks)"
+        (cdkDropListDropped)="drop($event, column.key)"
+        class="mt-4 flex min-h-[200px] flex-col gap-3"
+      >
+        <div
+          *ngFor="let task of tasksForStatus(column.key, tasks)"
+          cdkDrag
+          [cdkDragData]="task"
+          class="task-card"
+        >
+          <p class="text-sm uppercase tracking-wide text-muted">
+            {{ task.category }}
+          </p>
+          <h4 class="heading-lg">{{ task.title }}</h4>
+          <p class="text-sm-secondary" *ngIf="task.description">
+            {{ task.description }}
+          </p>
+          <div class="mt-3 flex items-center justify-between text-xs-secondary">
+            <span>
+              {{ task.dueDate ? ('Due ' + (task.dueDate | date : 'MMM d')) : 'No due date' }}
+            </span>
+            <button
+              *ngIf="hasManageRights()"
+              class="btn-danger"
+              type="button"
+              (click)="deleteTask(task)"
+            >
+              Remove
+            </button>
+          </div>
+        </div>
+
+        <p
+          *ngIf="tasksForStatus(column.key, tasks).length === 0"
+          class="empty-state"
+        >
+          Drag tasks here to move them into {{ column.label }}.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <section class="card-container-sm">
+    <div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+      <div>
+        <h2 class="heading-xl">Audit Trail</h2>
+        <p class="text-sm-secondary">
+          Last {{ (auditLog$ | async)?.length || 0 }} security events.
+        </p>
+      </div>
+    </div>
+    <div
+      class="mt-4 space-y-3 max-h-64 overflow-y-auto pr-1"
+      *ngIf="(auditLog$ | async) as entries"
+    >
+      <div
+        *ngFor="let entry of entries"
+        class="audit-entry"
+      >
+        <p class="font-semibold text-primary">{{ entry.action | titlecase }}</p>
+        <p class="text-xs text-muted">
+          {{ entry.createdAt | date: 'medium' }} • actor: {{ entry.actorId }}
+        </p>
+        <pre class="mt-2 rounded bg-slate-200 dark:bg-slate-900/70 p-2 text-xs text-tertiary dark:text-secondary">{{ entry.context | json }}</pre>
+      </div>
+      <p *ngIf="entries.length === 0" class="text-sm-secondary">
+        No audit entries yet.
+      </p>
+    </div>
+  </section>
+</div>
+
+<!-- Keyboard Shortcuts Modal -->
+<div
+  *ngIf="showShortcuts()"
+  class="modal-backdrop"
+  (click)="showShortcuts.set(false)"
+>
+  <div
+    class="modal-container"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="heading-xl">Keyboard Shortcuts</h3>
+      <button
+        class="btn-close"
+        (click)="showShortcuts.set(false)"
+      >
+        ✕
+      </button>
+    </div>
+    <div class="space-y-3 text-sm">
+      <div class="shortcut-item">
+        <span class="text-tertiary">Toggle Theme</span>
+        <kbd class="kbd-key">T</kbd>
+      </div>
+      <div class="shortcut-item">
+        <span class="text-tertiary">Create Task / Focus Title</span>
+        <kbd class="kbd-key">Ctrl/Cmd + N</kbd>
+      </div>
+      <div class="shortcut-item">
+        <span class="text-tertiary">Refresh Data</span>
+        <kbd class="kbd-key">Ctrl/Cmd + R</kbd>
+      </div>
+      <div class="shortcut-item">
+        <span class="text-tertiary">Show Shortcuts</span>
+        <kbd class="kbd-key">?</kbd>
+      </div>
+      <div class="flex items-center justify-between py-2">
+        <span class="text-tertiary">Close Modal</span>
+        <kbd class="kbd-key">Esc</kbd>
+      </div>
+    </div>
+  </div>
+</div>
+
+<ng-template #loadingBlock>
+  <div class="flex min-h-[40vh] items-center justify-center">
+    <p class="text-loading">Loading tasks…</p>
+  </div>
+</ng-template>
+
