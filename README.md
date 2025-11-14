@@ -124,12 +124,21 @@ Dashboard available at: `http://localhost:4200`
 
 ### Default Credentials
 
-On first startup, a default owner account is created:
+On first startup, a default owner account is automatically created:
 
 - **Email:** `owner@securetask.dev`
 - **Password:** `ChangeMe123!`
+- **Role:** Owner
 
-⚠️ **Security Note:** Change these credentials immediately in production!
+**Where it's stored:**
+- **Source Code:** Credentials are defined in `apps/api/src/app/users/users.service.ts` (lines 108-110) in the `ensureSeedUser()` method
+- **Database:** The user is stored in the SQLite database (`users` table) with the password hashed using bcrypt (12 salt rounds)
+- **Creation:** The seed user is only created if the database is empty (first run)
+
+⚠️ **Security Note:** Change these credentials immediately in production! You can either:
+- Modify the seed credentials in the source code before first deployment
+- Delete the database file and restart to regenerate with new credentials
+- Use the owner account to create a new admin user, then delete the seed account
 
 ---
 
